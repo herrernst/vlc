@@ -834,10 +834,17 @@ static int Start (audio_output_t *aout, audio_sample_format_t *restrict fmt)
     char *devbuf = NULL;
     if (sep != '\0')
     {
+    /* TrueHD and DTS-HD (HBR) run inside an 8-channel transport envelope
+     * that demands a 192 kHz link clock. Dolby Digital Plus (E-AC-3) is
+     * non-HBR and must preserve its native rate mapping. */
+    unsigned int target_rate = fmt->i_rate;
+    if (passthrough == PASSTHROUGH_HDMI && channels == 8 && fmt->i_format != VLC_CODEC_EAC3)
+        target_rate = 192000;
+
 #ifdef IEC958_AES3_CON_FS_22050
         unsigned aes3;
 
-        switch (fmt->i_rate)
+        switch (target_rate)
         {
 #define FS(freq) \
             case freq: aes3 = IEC958_AES3_CON_FS_ ## freq; break;
